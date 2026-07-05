@@ -26,10 +26,6 @@
             bear
           ];
         };
-        shellHook = ''
-          export IN_NIX_SHELL='impure'
-        '';
-
       });
     };
 }

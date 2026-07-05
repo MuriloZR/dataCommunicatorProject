@@ -1,4 +1,4 @@
-#include "../include/error.hpp"
+#include "error.hpp"
 
 uint16_t crc16(const std::vector<uint8_t>& data){
     uint16_t reg{0}, generator{0x1021};
