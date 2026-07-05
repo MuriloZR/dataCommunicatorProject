@@ -1,5 +1,5 @@
 CXX = c++
-CXXFLAGS = -std=c++20 -Wall -Wextra -I./include
+CXXFLAGS = -std=c++23 -Wall -Wextra -I./include
 DEBUGFLAGS = -g -O0 -DDEBUG
 RELEASEFLAGS = -O3
 
