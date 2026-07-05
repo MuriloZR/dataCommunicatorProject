@@ -22,6 +22,7 @@
             pkg-config
             lldb
             valgrind
+            package-version-server
 
             bear
           ];
