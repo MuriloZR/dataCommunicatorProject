@@ -3,31 +3,24 @@
 #include <cstdlib>
 
 std::vector<uint8_t> serialize(const Frame& f) {
-	std::vector<uint8_t> bytes;
+    // monta os dados para CRC (sem flags)
+    std::vector<uint8_t> crc_data = {
+        f.src, f.dst, static_cast<uint8_t>(f.type), f.seq,
+        static_cast<uint8_t>(f.length >> 8),
+        static_cast<uint8_t>(f.length & 0xFF)
+    };
+    for (auto b : f.payload) crc_data.push_back(b);
 
-	bytes.push_back(f.flag_start);
-	bytes.push_back(f.src);
-	bytes.push_back(f.dst);
-	bytes.push_back(static_cast<uint8_t>(f.type));
-	bytes.push_back(f.seq);
+    uint16_t crc = crc16(crc_data);
 
-	bytes.push_back(f.length >> 8);
-	bytes.push_back(f.length & 0xFF);
-	
-	for (auto b : f.payload) {
-		// if (b == 0x7E) {
-		// 	bytes.push_back(0x7D);
-		// }
-		bytes.push_back(b);
-	}
+    std::vector<uint8_t> bytes;
+    bytes.push_back(0x7E);                          // flag_start
+    for (auto b : crc_data) bytes.push_back(b);    // campos + payload
+    bytes.push_back(crc >> 8);                      // CRC MSB
+    bytes.push_back(crc & 0xFF);                    // CRC LSB
+    bytes.push_back(0x7E);                          // flag_end
 
-	uint16_t crc = crc16(bytes);
-	bytes.push_back(crc >> 8);
-	bytes.push_back(crc & 0xFF);
-
-	bytes.push_back(f.flag_end);
-
-	return bytes;
+    return bytes;
 }
 
 Frame deserialize(const std::vector<uint8_t>& raw) {
