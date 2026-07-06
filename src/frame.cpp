@@ -1,5 +1,6 @@
 #include "frame.hpp"
 #include "error.hpp"
+#include <cassert>
 #include <cstdlib>
 
 std::vector<uint8_t> serialize(const Frame& f) {
@@ -9,7 +10,13 @@ std::vector<uint8_t> serialize(const Frame& f) {
         static_cast<uint8_t>(f.length >> 8),
         static_cast<uint8_t>(f.length & 0xFF)
     };
-    for (auto b : f.payload) crc_data.push_back(b);
+    // Restrição de protocolo: payload não pode conter 0x7E ou 0x7D.
+    // Byte stuffing não implementado — ver frame.hpp.
+    // asserts são desabilitados em builds release (-DNDEBUG).
+    for (auto b : f.payload) {
+        assert(b != 0x7E && b != 0x7D);
+        crc_data.push_back(b);
+    }
 
     uint16_t crc = crc16(crc_data);
 
