@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 enum class FrameType : uint8_t {
@@ -21,4 +22,4 @@ struct Frame {
 };
 
 std::vector<uint8_t> serialize(const Frame& f);
-Frame deserialize(const std::vector<uint8_t>& raw);
+std::optional<Frame> deserialize(const std::vector<uint8_t>& raw);
