@@ -100,7 +100,8 @@ bool recv_bytes(int fd, std::vector<uint8_t>& out, size_t n, int timeout_ms) {
 
             int pronto = poll(&pfd, 1, restante);
 
-            if (pronto <= 0) return false;
+            if (pronto == 0) return false; // Timeout
+						if (pronto < 0) return false; // Erro
             if (!(pfd.revents & POLLIN)) return false;
         }
 
