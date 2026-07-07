@@ -7,7 +7,7 @@ SRCDIR = src
 OBJDIR = build
 BINDIR = build
 
-SRCS = $(wildcard $(SRCDIR)/*.cpp)
+SRCS = $(filter-out $(SRCDIR)/test_socket.cpp,$(wildcard $(SRCDIR)/*.cpp))
 OBJS = $(SRCS:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 TARGET = $(BINDIR)/app
 
