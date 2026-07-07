@@ -81,7 +81,7 @@ bool send_bytes(int fd, const std::vector<uint8_t>& data) {
 	return true;
 }
 
-bool recv_bytes(int fd, std::vector<uint8_t>& out, size_t n, int timeout_ms) {
+RecvStatus recv_bytes(int fd, std::vector<uint8_t>& out, size_t n, int timeout_ms) {
     out.resize(n);
     size_t totalRecebidos{};
 
@@ -95,7 +95,7 @@ bool recv_bytes(int fd, std::vector<uint8_t>& out, size_t n, int timeout_ms) {
                             (agora - inicio).count();
             int restante = timeout_ms - decorrido;
 
-            if (restante <= 0) return false; // tempo total esgotado
+			if (restante <= 0) return RecvStatus::Timeout; // tempo total esgotado
 
             pollfd pfd{};
             pfd.fd = fd;
@@ -103,18 +103,18 @@ bool recv_bytes(int fd, std::vector<uint8_t>& out, size_t n, int timeout_ms) {
 
             int pronto = poll(&pfd, 1, restante);
 
-            if (pronto == 0) return false; // Timeout
-						if (pronto < 0) return false; // Erro
-            if (!(pfd.revents & POLLIN)) return false;
+						if (pronto == 0) return RecvStatus::Timeout; // Timeout
+						if (pronto < 0) return RecvStatus::Closed; // Erro
+						if (!(pfd.revents & POLLIN)) return RecvStatus::Closed;
         }
 
         int recebidos = recv(fd, out.data() + totalRecebidos, n - totalRecebidos, 0);
 
-        if (recebidos <= 0) return false;
+				if (recebidos <= 0) return RecvStatus::Closed;
 
         totalRecebidos += recebidos;
     }
-    return true;
+		return RecvStatus::Ok;
 }
 
 void close_socket(int fd) {

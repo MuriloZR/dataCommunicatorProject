@@ -3,12 +3,13 @@
 #include <chrono>
 #include <random>
 
-bool receive_frame(int fd, std::vector<uint8_t>& raw, int timeout_ms) {
+RecvStatus receive_frame(int fd, std::vector<uint8_t>& raw, int timeout_ms) {
     auto frame_start = std::chrono::steady_clock::now();
 
     std::vector<uint8_t> header;
-    if (!recv_bytes(fd, header, 8, timeout_ms)) {
-        return false;
+	RecvStatus header_status = recv_bytes(fd, header, 8, timeout_ms);
+	if (header_status != RecvStatus::Ok) {
+		return header_status;
     }
 
     uint16_t payload_size = (static_cast<uint16_t>(header[6]) << 8) | header[7];
@@ -23,17 +24,18 @@ bool receive_frame(int fd, std::vector<uint8_t>& raw, int timeout_ms) {
         remaining_timeout_ms = timeout_ms - static_cast<int>(elapsed);
 
         if (remaining_timeout_ms <= 0) {
-            return false;
+			return RecvStatus::Timeout;
         }
     }
 
-    if (!recv_bytes(fd, tail, static_cast<size_t>(payload_size) + 3, remaining_timeout_ms)) {
-        return false;
+	RecvStatus tail_status = recv_bytes(fd, tail, static_cast<size_t>(payload_size) + 3, remaining_timeout_ms);
+	if (tail_status != RecvStatus::Ok) {
+		return tail_status;
     }
 
     raw = std::move(header);
     raw.insert(raw.end(), tail.begin(), tail.end());
-    return true;
+	return RecvStatus::Ok;
 }
 
 Frame make_ack(const Frame& frame, uint16_t seq) {
@@ -76,14 +78,14 @@ bool gbn_sender(int fd, const std::vector<Frame> &frames,
 		}
 		std::vector<uint8_t> raw;
 
-		bool ok = recv_bytes(
+		RecvStatus status = recv_bytes(
 			fd,
 			raw,
 			11,
 			cfg.timeout_ms
 		);
 
-		if (!ok) {
+		if (status == RecvStatus::Timeout) {
 			for (size_t i = base; i < nextSeq; i++) {
 				auto raw = serialize(frames[i]);
 				if (!send_bytes(fd, raw)) {
@@ -92,10 +94,16 @@ bool gbn_sender(int fd, const std::vector<Frame> &frames,
 			}
 			continue;
 		}
+		if (status != RecvStatus::Ok) {
+			return false;
+		}
 
-		Frame ack = deserialize(raw);
-		if (ack.type == FrameType::ACK && ack.seq >= base) {
-			base = static_cast<size_t>(ack.seq) + 1;
+		auto ack = deserialize(raw);
+		if (!ack) {
+			continue;
+		}
+		if (ack->type == FrameType::ACK && ack->seq >= base) {
+			base = static_cast<size_t>(ack->seq) + 1;
 		}
 	}
 
@@ -110,15 +118,22 @@ void gbn_receiver(int fd, const GBNConfig& cfg, std::vector<Frame>& out) {
 
 	while (true) {
 		std::vector<uint8_t> raw;
-		if (!receive_frame(fd, raw, cfg.timeout_ms)) {
+		RecvStatus status = receive_frame(fd, raw, cfg.timeout_ms);
+		if (status == RecvStatus::Timeout) {
+			continue;
+		}
+		if (status != RecvStatus::Ok) {
 			return;
 		}
 
-		Frame frame = deserialize(raw);
-		bool is_termination = frame.type == FrameType::FIN ||
-			(frame.type == FrameType::DATA && frame.payload.empty());
+		auto frame = deserialize(raw);
+		if (!frame) {
+			continue;
+		}
+		bool is_termination = frame->type == FrameType::FIN ||
+			(frame->type == FrameType::DATA && frame->payload.empty());
 
-		if (frame.type == FrameType::ACK || frame.type == FrameType::NAK) {
+		if (frame->type == FrameType::ACK || frame->type == FrameType::NAK) {
 			continue;
 		}
 
@@ -126,28 +141,28 @@ void gbn_receiver(int fd, const GBNConfig& cfg, std::vector<Frame>& out) {
 			continue;
 		}
 
-		if (frame.seq == expected_seq) {
+		if (frame->seq == expected_seq) {
 			if (!is_termination) {
-				out.push_back(frame);
+				out.push_back(*frame);
 			}
 			last_ack_seq = expected_seq;
 			have_ack = true;
 			expected_seq++;
 			if (is_termination) {
-				Frame ack = make_ack(frame, last_ack_seq);
+				Frame ack = make_ack(*frame, last_ack_seq);
 				if (!send_bytes(fd, serialize(ack))) {
 					return;
 				}
 				return;
 			}
 		}
-		else if (frame.seq < expected_seq && expected_seq > 0) {
+		else if (frame->seq < expected_seq && expected_seq > 0) {
 			last_ack_seq = static_cast<uint16_t>(expected_seq - 1);
 			have_ack = true;
 		}
 
 		if (have_ack) {
-			Frame ack = make_ack(frame, last_ack_seq);
+			Frame ack = make_ack(*frame, last_ack_seq);
 			if (!send_bytes(fd, serialize(ack))) {
 				return;
 			}

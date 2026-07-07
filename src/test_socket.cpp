@@ -8,7 +8,7 @@ void server() {
   int fd = create_server(5000);
   std::vector<uint8_t> dados;
 
-  if (recv_bytes(fd, dados, 5, 5000)) {
+  if (recv_bytes(fd, dados, 5, 5000) == RecvStatus::Ok) {
 		std::print("Servidor recebeu: ");
 
     for (int b : dados)
@@ -37,7 +37,7 @@ void client() {
 
   std::vector<uint8_t> resposta;
 
-  if (recv_bytes(fd, resposta, 2, 5000)) {
+  if (recv_bytes(fd, resposta, 2, 5000) == RecvStatus::Ok) {
 		std::print("Servidor recebeu: ");
 
     for (char b : resposta)
