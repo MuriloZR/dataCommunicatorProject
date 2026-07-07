@@ -23,4 +23,4 @@ struct Frame {
 };
 
 std::vector<uint8_t> serialize(const Frame& f);
-std::optional<Frame> deserialize(const std::vector<uint8_t>& raw);
+Frame deserialize(const std::vector<uint8_t>& raw);
