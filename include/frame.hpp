@@ -14,7 +14,7 @@ struct Frame {
     uint8_t  src;          // endereço origem
     uint8_t  dst;          // endereço destino
     FrameType type;
-    uint8_t  seq;          // número de sequência
+    uint16_t  seq;          // número de sequência
     uint16_t length;       // tamanho do payload em bytes
     std::vector<uint8_t> payload;
     uint16_t crc;          // calculado sobre tudo acima

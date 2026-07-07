@@ -6,7 +6,7 @@
 std::vector<uint8_t> serialize(const Frame& f) {
     // monta os dados para CRC (sem flags)
     std::vector<uint8_t> crc_data = {
-        f.src, f.dst, static_cast<uint8_t>(f.type), f.seq,
+        f.src, f.dst, static_cast<uint8_t>(f.type), static_cast<uint8_t>(f.seq >> 8), static_cast<uint8_t>(f.seq & 0xFF),
         static_cast<uint8_t>(f.length >> 8),
         static_cast<uint8_t>(f.length & 0xFF)
     };
@@ -41,9 +41,10 @@ std::optional<Frame> deserialize(const std::vector<uint8_t>& raw) {
 	f.src = raw[1];
 	f.dst = raw[2];
 	f.type = static_cast<FrameType>(raw[3]);
-	f.seq = raw[4];
 
-	f.length = (static_cast<uint16_t>(raw[5]) << 8) | raw[6];
+	f.seq = (static_cast<uint8_t>(raw[4]) << 8) | raw[5];
+
+	f.length = (static_cast<uint16_t>(raw[6]) << 8) | raw[7];
 
 	if (raw.size() != 10 + f.length) return std::nullopt;
 
