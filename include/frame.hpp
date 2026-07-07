@@ -6,7 +6,8 @@
 enum class FrameType : uint8_t {
     DATA = 0x01,
     ACK  = 0x02,
-    NAK  = 0x03
+    NAK  = 0x03,
+    FIN  = 0x04
 };
 
 struct Frame {
