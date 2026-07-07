@@ -1,9 +1,7 @@
 #pragma once
 
 #include "frame.hpp"
-#include "socket.hpp"
 #include <cstdint>
-#include <functional>
 #include <vector>
 
 struct GBNConfig {

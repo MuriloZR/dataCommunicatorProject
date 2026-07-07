@@ -1,5 +1,8 @@
 #include "socket.hpp"
 #include <chrono>
+#include <cerrno>
+#include <iostream>
+#include <print>
 
 int create_server(int port) {
 	int server = socket(AF_INET, SOCK_STREAM, 0);
