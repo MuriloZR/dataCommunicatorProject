@@ -31,7 +31,7 @@ std::vector<uint8_t> serialize(const Frame& f) {
 }
 
 std::optional<Frame> deserialize(const std::vector<uint8_t>& raw) {
-	if (raw.size() < 10) return std::nullopt;
+	if (raw.size() < 11) return std::nullopt;
 
 	Frame f{};
 	if (raw.front() != 0x7E || raw.back() != 0x7E) return std::nullopt;
@@ -46,18 +46,18 @@ std::optional<Frame> deserialize(const std::vector<uint8_t>& raw) {
 
 	f.length = (static_cast<uint16_t>(raw[6]) << 8) | raw[7];
 
-	if (raw.size() != 10 + f.length) return std::nullopt;
+	if (raw.size() != 11 + f.length) return std::nullopt;
 
-	for (int i = 7; i < 7 + f.length; i++) {
+	for (int i = 8; i < 8 + f.length; i++) {
 		f.payload.push_back(raw[i]);
 	}
 
-	uint16_t crc = (static_cast<uint16_t>(raw[7+f.length]) << 8) | raw[8+f.length];
+	uint16_t crc = (static_cast<uint16_t>(raw[8+f.length]) << 8) | raw[9+f.length];
 	f.crc = crc;
 
 	std::vector<uint8_t> crc_data(
     raw.begin() + 1,
-    raw.begin() + (7 + f.length)
+    raw.begin() + (8 + f.length)
 	);
 	uint16_t computed_crc = crc16(crc_data);
 
